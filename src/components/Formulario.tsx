@@ -182,7 +182,7 @@ export default function Formulario({
           <select
             value={dia}
             onChange={(e) => setDia(e.target.value as DiaOTodos)}
-            className={entrada}
+            className={`${entrada} select-flecha`}
           >
             {!inicial && <option value="todos">Todos los días</option>}
             {DIAS.map((d) => (
