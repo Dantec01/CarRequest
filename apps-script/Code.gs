@@ -133,8 +133,8 @@ function editar_(id, item) {
   CAMPOS_EDITABLES.forEach(function (campo) {
     if (Object.prototype.hasOwnProperty.call(item, campo)) obj[campo] = texto_(item[campo]);
   });
-  if (item.dia && item.dia !== obj.dia) {
-    obj.dia = validarDia_(item.dia);
+  if (item.dia && validarDia_(item.dia) !== obj.dia) {
+    obj.dia = item.dia;
     obj.orden = String(siguienteOrden_(obj.dia));
   }
   obj.actualizado = new Date().toISOString();
@@ -156,16 +156,8 @@ function copiar_(id, dias) {
   if (!Array.isArray(dias) || dias.length === 0) throw new Error('Indica al menos un dia');
 
   const origen = filaAObjeto_(hoja_().getRange(fila, 1, 1, COLUMNAS.length).getValues()[0]);
-  const unicos = dias.filter(function (d, i) { return dias.indexOf(d) === i; });
-  const creados = unicos.map(function (d) {
-    const dia = validarDia_(d);
-    const nuevoId = Utilities.getUuid();
-    hoja_().appendRow(armarFila_(nuevoId, dia, origen, siguienteOrden_(dia)));
-    return nuevoId;
-  });
-  return { ids: creados };
+  return { ids: agregarFilas_([origen], dias) };
 }
-
 function copiarSemana_(id) {
   const fila = buscarFila_(id);
   if (fila < 0) throw new Error('Pedido no encontrado');
@@ -183,22 +175,27 @@ function crearVarios_(items, dias) {
   if (!Array.isArray(items) || items.length === 0) throw new Error('Indica al menos un pedido');
   if (items.length > 20) throw new Error('Maximo 20 pedidos a la vez');
   const lista = Array.isArray(dias) && dias.length > 0 ? dias : ['lunes'];
-  const unicos = lista
-    .filter(function (d, i) { return lista.indexOf(d) === i; })
+  return { ids: agregarFilas_(items, lista) };
+}
+
+/**
+ * Agrega una fila por cada combinacion item x dia con una sola lectura y una sola
+ * escritura. Devuelve los ids creados.
+ */
+function agregarFilas_(items, dias) {
+  const unicos = dias
+    .filter(function (d, i) { return dias.indexOf(d) === i; })
     .map(validarDia_);
 
-  const existentes = leerTodo_();
+  const orden = ordenMaximo_();
   const filas = [];
   const ids = [];
   unicos.forEach(function (dia) {
-    let orden = Math.max.apply(
-      null,
-      [0].concat(existentes.filter(function (o) { return o.dia === dia; }).map(function (o) { return Number(o.orden) || 0; }))
-    );
+    let n = orden[dia] || 0;
     items.forEach(function (item) {
-      orden += 1;
+      n += 1;
       const id = Utilities.getUuid();
-      filas.push(armarFila_(id, dia, item || {}, orden));
+      filas.push(armarFila_(id, dia, item || {}, n));
       ids.push(id);
     });
   });
@@ -210,9 +207,8 @@ function crearVarios_(items, dias) {
   const rango = hoja.getRange(inicio, 1, filas.length, COLUMNAS.length);
   rango.setNumberFormat('@');
   rango.setValues(filas);
-  return { ids: ids };
+  return ids;
 }
-
 // ---------- Utilidades ----------
 
 function hoja_() {
@@ -259,12 +255,26 @@ function buscarFila_(id) {
   return -1;
 }
 
-function siguienteOrden_(dia) {
-  const delDia = leerTodo_().filter(function (o) { return o.dia === dia; });
-  if (delDia.length === 0) return 1;
-  return Math.max.apply(null, delDia.map(function (o) { return Number(o.orden) || 0; })) + 1;
+/** Mayor orden usado por dia, leyendo solo las columnas dia y orden. */
+function ordenMaximo_() {
+  const hoja = hoja_();
+  const ultima = hoja.getLastRow();
+  const max = {};
+  if (ultima < 2) return max;
+  const iDia = COLUMNAS.indexOf('dia') + 1;
+  const iOrden = COLUMNAS.indexOf('orden') + 1;
+  const dias = hoja.getRange(2, iDia, ultima - 1, 1).getValues();
+  const ordenes = hoja.getRange(2, iOrden, ultima - 1, 1).getValues();
+  for (let i = 0; i < dias.length; i++) {
+    const n = Number(ordenes[i][0]) || 0;
+    if (n > (max[dias[i][0]] || 0)) max[dias[i][0]] = n;
+  }
+  return max;
 }
 
+function siguienteOrden_(dia) {
+  return (ordenMaximo_()[dia] || 0) + 1;
+}
 function validarDia_(dia) {
   if (DIAS.indexOf(dia) < 0) throw new Error('Dia no valido: ' + dia);
   return dia;

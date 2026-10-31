@@ -11,7 +11,7 @@ Tablero semanal para organizar los pedidos de vehículos de subastas japonesas q
 - **No hay entrada de "pegar mensajes de WhatsApp"**: Dan quiere obligar al superior a mandar la información ordenada.
 - Formulario: un campo por dato, **todos opcionales**: Modelo, Subasta, Chasis, Año, Grado, Km, Color, Puntaje, Precio, Nota.
 - **No se guarda un pedido vacío**: el botón queda desactivado ("Llena al menos un dato") mientras ningún campo tenga texto.
-- **Varios modelos en un pedido**: junto al campo Modelo hay un botón "+" (solo al **crear**, máx. 10) que agrega otra caja de modelo debajo (cada una con × para quitarla). Se guarda **una fila por modelo** con los mismos datos del resto del formulario, para que cada modelo sea una tarjeta independiente (se busca por separado). Rangos de años: se escriben en el campo Año como texto, p. ej. `2018-2022`. Con varios modelos se usa la acción `crearVarios` de Code.gs (una sola petición, filas = modelos x días); con un solo modelo se siguen usando `crear` / `crearEnTodos`.
+- **Varios modelos en un pedido**: junto al campo Modelo hay un botón "+" (solo al **crear**, máx. 10) que agrega otra caja de modelo debajo (cada una con × para quitarla). Se guarda **una fila por modelo** con los mismos datos del resto del formulario, para que cada modelo sea una tarjeta independiente (se busca por separado). Rangos de años: se escriben en el campo Año como texto, p. ej. `2018-2022`. Con varios modelos se usa la acción `crearVarios` de Code.gs (una sola petición, filas = modelos x días); con un solo modelo se usa `crear` (un día) o `crearEnTodos`.
 - **Formatos de los campos** (todo es texto libre; la hoja no los convierte porque las columnas son texto): varios valores separados por **coma y espacio** (`3, 3.5, 4`, varios chasis, varias subastas, varios grados como `G, X, S`) y rangos como `80000 - 90000` (Km), `3 - 5` (Puntaje), `68 - 70.5` (Precio), `2018-2022` (Año). Decimales con **punto** (la coma es separador de lista). La app solo recorta espacios sobrantes al guardar; no reescribe comas ni guiones (el puntaje puede ser `4 C-C`). Para parsearlos después (fase 3 / análisis) hay que partir por `, ` y por ` - `.
 - **Subasta**: tiene su propio botón "+" (también al editar) para varias casas (p. ej. TAA Chubu, TAA Kinki); se guardan **en una sola celda** separadas por `, ` (no crea filas aparte, a diferencia de Modelo). También se puede escribir con comas en una sola caja. Chasis es un solo campo de texto con comas.
 - Selector "Para el día" del formulario: Lunes a Sábado y, **solo al crear**, la opción **"Todos los días"** (primera de la lista). En edición no aparece.
@@ -30,7 +30,7 @@ Vite 5 + React 18 + TypeScript (strict) + Tailwind 3 + PWA (`vite-plugin-pwa`). 
 
 ## Estructura
 - `src/App.tsx`: `App` resuelve token/URL; `Aplicacion` es la pantalla principal (estado, acciones, modales, avisos).
-- `src/storage.ts`: **único acceso a datos** (token, caché local, API de Apps Script). Funciones internas `leer`/`enviar`/`escribir`; `crearApi(token)` expone `listar`, `crear`, `crearEnTodos`, `editar`, `eliminar`, `copiar`, `copiarSemana`. Si cambia el almacenamiento, solo se toca este archivo.
+- `src/storage.ts`: **único acceso a datos** (token, caché local (clave `carrequest.cache.v1`; subir versión si cambia la forma de `Pedido`), API de Apps Script). Funciones internas `leer`/`enviar`/`escribir`; `crearApi(token)` expone `listar`, `crear`, `crearEnTodos`, `editar`, `eliminar`, `copiar`, `copiarSemana`. Si cambia el almacenamiento, solo se toca este archivo.
 - `src/types.ts`: `DIAS`, `CAMPOS`, `Pedido`, `DatosPedido`. `src/util.ts`: día de hoy, relojes, resumen de tarjeta, TSV, portapapeles, `useMediaQuery`.
 - `src/components/`: `Cabecera`, `Rueda` (+ `Rueda.css`), `Relojes`, `VistaDia` (móvil), `Tablero` (PC, >= 768 px), `Tarjeta`, `Formulario` (exporta `DiaOTodos = Dia | 'todos'`), `SelectorDias`, `Hoja` (modal), `PantallaToken`, `Iconos`.
 - `.env.local` (no se sube a git): `VITE_API_URL` = URL `/exec` de Apps Script. `.env.example` es la plantilla.
@@ -39,7 +39,7 @@ Vite 5 + React 18 + TypeScript (strict) + Tailwind 3 + PWA (`vite-plugin-pwa`). 
 `id | dia | modelo | subasta | chasis | anio | grado | km | color | puntaje | precio | nota | orden | actualizado`
 - `dia`: `lunes|martes|miercoles|jueves|viernes|sabado` (sin tildes). Todo se guarda como texto.
 - API (ver cabecera de `Code.gs`): `GET ?token=T` lista; `POST` con cuerpo JSON y `Content-Type: text/plain` para `crear`, `editar`, `eliminar`, `copiar` (`dias:[...]`), `copiarSemana`, `crearVarios` (`items:[...]`, `dias:[...]`; máx. 20 items). Toda escritura responde `{ ok, version, resultado, items }`; `crear` devuelve `resultado.id`.
-- **"Todos los días"** = `crearEnTodos`: `crear` en lunes y luego `copiarSemana` con el id devuelto (2 peticiones, sin cambiar Apps Script). Si falla la segunda, queda solo en lunes y se muestra un error explicándolo.
+- **"Todos los días"** = `crearEnTodos`: ahora llama a `crearVarios` con los 6 días (1 petición, atómica).
 - El **token** no va en el código ni en este archivo: se guarda en localStorage. Primera vez: abrir la app con `?token=...` en la URL (se guarda y se quita de la barra) o pegarlo en la pantalla de token. Si el servidor responde "No autorizado", se borra y se pide de nuevo.
 - `Code.gs` vive en el proyecto de Apps Script de la hoja. Conviene copiarlo a `apps-script/Code.gs` en esta carpeta como respaldo. Si se cambia, hay que crear una **versión nueva** de la implementación (la URL se mantiene).
 
@@ -69,10 +69,11 @@ Vite 5 + React 18 + TypeScript (strict) + Tailwind 3 + PWA (`vite-plugin-pwa`). 
 - [x] Proyecto creado y funcionando en `npm run dev` (Dan ya lo vio en el navegador): lectura, crear, editar, eliminar, copiar a otros días, copiar a la semana, relojes, actualizar manual, Copiar TSV, PWA básica.
 - [x] Ajustes visuales: tablero alineado con línea bajo cada cabecera de día, rueda animada, nuevo icono de actualizar.
 - [x] Opción "Todos los días" al crear un pedido (escrita; **sin confirmar aún que funcione de punta a punta**).
-- [ ] Confirmar que `npm run build` (`tsc`) compila sin errores.
+- [x] `npm run build` (`tsc`) compila sin errores (confirmado).
 - [ ] Probar flujo completo en móvil real (PWA instalada) y en PC, incluido "Todos los días".
-- [ ] Iconos PNG 192/512 para la PWA (hoy solo `public/icon.svg`).
-- [ ] Respaldo de `Code.gs` en `apps-script/`.
+- [x] Iconos PNG 192/512 para la PWA (`public/icon-192.png`, `icon-512.png`).
+- [x] Respaldo de `Code.gs` en `apps-script/`. **Repo en GitHub: https://github.com/Dantec01/CarRequest.git (rama main).**
+- [ ] **Dan debe pegar el nuevo `Code.gs` en Apps Script y crear versión nueva** (copiar/crearVarios ahora hacen una sola lectura/escritura en bloque; `ordenMaximo_` lee solo las columnas dia y orden). Hasta entonces `Todos los días` falla con `Accion no valida` si el script viejo no tiene `crearVarios` (sí lo tiene).
 - [ ] Despliegue en Vercel (variable `VITE_API_URL`).
 - [x] `Code.gs` actualizado por Dan en Apps Script con la acción `crearVarios` (confirmado; falta probar guardar varios modelos). Si da "Falta actualizar Code.gs", comprobar que creó una versión nueva de la implementación.
 - [ ] Autocompletar (propuesto, **pendiente de que Dan elija**): lista guardada en una pestaña "Opciones" de la hoja (`campo | valor`, una fila por valor) para Modelo, Subasta, Color, Grado y Puntaje, más los valores ya usados en los pedidos; los valores nuevos se agregan solos al guardar; en el formulario con `<datalist>` (o botones rápidos para Subasta). Requiere cambiar `Code.gs` y crear versión nueva. Alternativa mínima: solo sugerir valores ya usados en los pedidos (sin tocar `Code.gs`).
