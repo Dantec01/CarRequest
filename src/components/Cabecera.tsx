@@ -18,6 +18,13 @@ export default function Cabecera({
     ? ultima.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
     : null;
 
+  const estado = hora && (
+    <p className="text-right text-[11px] leading-tight text-suave md:text-xs">
+      Actualizado a las
+      <br className="md:hidden" /> {hora}
+    </p>
+  );
+
   return (
     <header className="px-5 pb-3 pt-[calc(1.25rem+env(safe-area-inset-top))] md:px-8 md:pt-6">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-3">
@@ -32,10 +39,12 @@ export default function Cabecera({
             Tablero semanal · se repite cada semana
           </p>
         </div>
-        <div className="order-3 flex w-full gap-2.5 md:order-2 md:w-auto">
+        <div className="order-3 flex w-full gap-2.5 md:order-2 md:w-auto md:items-center">
+          {estado && <div className="hidden md:block">{estado}</div>}
           <Relojes />
         </div>
         <div className="order-2 flex items-center gap-2 md:order-3">
+          {estado && <div className="md:hidden">{estado}</div>}
           {acciones}
           <button
             type="button"
@@ -50,7 +59,6 @@ export default function Cabecera({
           </button>
         </div>
       </div>
-      {hora && <p className="mt-2 text-xs text-suave">Actualizado a las {hora}</p>}
     </header>
   );
 }

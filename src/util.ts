@@ -4,9 +4,9 @@ import { DIAS, type Dia, type Pedido } from './types';
 export const ZONA_BOLIVIA = 'America/La_Paz';
 export const ZONA_JAPON = 'Asia/Tokyo';
 
-/** Día de la semana actual en Bolivia, sin tildes. Domingo cae en lunes. */
+/** Día de la semana actual en Japón, sin tildes. Domingo cae en lunes. */
 export function diaDeHoy(): Dia {
-  const nombre = new Intl.DateTimeFormat('es', { weekday: 'long', timeZone: ZONA_BOLIVIA })
+  const nombre = new Intl.DateTimeFormat('es', { weekday: 'long', timeZone: ZONA_JAPON })
     .format(new Date())
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -41,12 +41,17 @@ export function horaEn(fecha: Date, zona: string): string {
   }).format(fecha);
 }
 
-export function resumen(p: Pedido): { l1: string; l2: string } {
-  const l1 = [p.anio, p.grado && `Grado ${p.grado}`, p.km && `${p.km} km`, p.color]
-    .filter(Boolean)
-    .join(' · ');
-  const l2 = [p.subasta, p.puntaje, p.precio && `Precio ${p.precio}`].filter(Boolean).join(' · ');
-  return { l1, l2 };
+/** Filas de detalle de la tarjeta, en orden. Las filas sin datos no se incluyen. */
+export function filasDetalle(p: Pedido): string[] {
+  const unir = (...partes: (string | false)[]) => partes.filter(Boolean).join(' · ');
+  return [
+    unir(p.anio && `Año: ${p.anio}`, p.grado && `Grado: ${p.grado}`),
+    p.km && `Km: ${p.km}`,
+    p.puntaje && `Puntaje: ${p.puntaje}`,
+    p.subasta && `Subastas: ${p.subasta}`,
+    p.color && `Color: ${p.color}`,
+    p.precio && `Precio: ${p.precio}`,
+  ].filter(Boolean) as string[];
 }
 
 const limpiar = (s: string) => s.replace(/[\t\r\n]+/g, ' ');

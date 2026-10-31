@@ -18,6 +18,7 @@ Tablero semanal para organizar los pedidos de vehículos de subastas japonesas q
 - **Sin estado** en las tarjetas por ahora (Pendiente/En proceso/Hecho ocultos; quizá vuelva como columna `estado`).
 - Iconos bajo cada tarjeta, separados por línea fina: editar, copiar a otro día, copiar a toda la semana, eliminar (rojo, al final). Copiar a la semana y eliminar piden confirmación (`window.confirm`).
 - Cabecera: **icono animado `Rueda`** (anillos y arcos concéntricos que giran; adaptado de un loader de Uiverse.io de Nawsome; `Rueda.tsx` + `Rueda.css`, sin styled-components; azul `#1F5A9E` y carbón `#23262B`; 48 px; las capas se separan al pasar el ratón; se detiene con `prefers-reduced-motion`) a la izquierda del título, en la misma fila que "CarRequest" (el título lleva degradado de texto, gris carbón `#23262B` a azul `#1F5A9E`, mitad y mitad con mezcla en el centro, con `bg-clip-text`); subtítulo debajo (solo PC) alineado con el título; relojes de **Japón** (`Asia/Tokyo`) y **Bolivia** (`America/La_Paz`); botón Actualizar con icono de dos flechas circulares (estilo refresh-cw) que gira mientras carga.
+- El día marcado como **hoy** (y el día inicial en móvil) se calcula con la hora de **Japón** (Asia/Tokyo), no la de Bolivia. Domingo cae en lunes.
 - Solo lo usan dos personas.
 - **Sin backend propio ni Supabase/BD**: datos en **Google Sheets + Apps Script**.
 - **Sin servicios de terceros por ahora** (nada de ntfy, Firebase, etc.) hasta explorar todas las opciones. Fuentes autoalojadas con `@fontsource/dm-sans`.
