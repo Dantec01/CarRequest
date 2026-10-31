@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-fondo font-sans text-tinta antialiased;
+    margin: 0;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+  }
+}
+
+/* Efecto de botones: elevación al pasar el cursor + barrido de brillo.
+   Uso: class="fx-btn fx-btn--primary fx-btn--shine" (o fx-btn--secondary). */
+@layer components {
+  .fx-btn {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease;
+  }
+  .fx-btn:focus-visible {
+    outline: 2px solid #1f5a9e;
+    outline-offset: 2px;
+  }
+  .fx-btn:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+  }
+  .fx-btn--primary {
+    --fx-brillo: rgba(255, 255, 255, 0.45);
+  }
+  .fx-btn--secondary {
+    --fx-brillo: rgba(31, 90, 158, 0.14);
+  }
+  .fx-btn--shine::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -60%;
+    width: 40%;
+    background: linear-gradient(110deg, transparent, var(--fx-brillo), transparent);
+    transform: skewX(-20deg);
+    pointer-events: none;
+    transition: left 0.6s ease;
+  }
+
+  /* Solo con ratón: en pantallas táctiles no hay "hover". */
+  @media (hover: hover) {
+    .fx-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+    .fx-btn--primary:hover:not(:disabled) {
+      background-color: #184a85;
+      box-shadow: 0 6px 16px rgba(31, 90, 158, 0.3);
+    }
+    .fx-btn--secondary:hover:not(:disabled) {
+      background-color: #e5edf6;
+      border-color: #1f5a9e;
+    }
+    .fx-btn--shine:hover:not(:disabled)::after {
+      left: 130%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fx-btn,
+    .fx-btn--shine::after {
+      transition: none;
+    }
+    .fx-btn:hover:not(:disabled),
+    .fx-btn:active:not(:disabled) {
+      transform: none;
+    }
+  }
+}

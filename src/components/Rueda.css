@@ -1,0 +1,117 @@
+/* Icono animado basado en un loader de Uiverse.io (autor: Nawsome), adaptado a CarRequest.
+   Colores: azul del título (#1f5a9e) y gris carbón (#23262b). Sin dependencias extra. */
+
+.rueda {
+  position: relative;
+  flex-shrink: 0;
+  width: var(--tam);
+  height: var(--tam);
+  color: #1f5a9e;
+}
+
+/* El dibujo original mide 300 px; se reduce con scale para que ocupe --tam. */
+.rueda-marco {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 300px;
+  height: 300px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform: translate(-50%, -50%) scale(var(--escala));
+}
+
+.rueda-marco svg {
+  position: absolute;
+  width: 344px;
+  height: 344px;
+  fill: none;
+  transition: 0.5s;
+  transform-origin: center;
+  z-index: calc(1 - (0.2 * var(--j)));
+}
+
+/* Efecto al pasar el ratón: las capas se separan. */
+.rueda:hover .rueda-marco svg {
+  transform: rotate(-80deg) skew(30deg) translateX(calc(45px * var(--i)))
+    translateY(calc(-35px * var(--i)));
+}
+
+.rueda #center {
+  transition: 0.5s;
+  transform-origin: center;
+  fill: currentColor;
+}
+
+.rueda:hover #center {
+  transform: rotate(-30deg) translateX(45px) translateY(-3px);
+}
+
+/* Trazos (se engrosan porque el dibujo se escala a ~0.24). */
+.rueda #out1 path {
+  stroke: currentColor;
+  stroke-width: 5;
+}
+
+.rueda #out2 path,
+.rueda #inner3 path {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 3;
+}
+
+.rueda #inner1 path {
+  fill: currentColor;
+}
+
+.rueda #out3 {
+  stroke: #23262b;
+  stroke-width: 5;
+}
+
+.rueda #center1 {
+  fill: #23262b;
+}
+
+/* Animaciones */
+.rueda #out2 {
+  animation: rueda-giro 7s ease-in-out infinite alternate;
+  transform-origin: center;
+}
+
+.rueda #out3 {
+  animation: rueda-giro 3s ease-in-out infinite alternate;
+  transform-origin: center;
+}
+
+.rueda #inner3,
+.rueda #inner1 {
+  animation: rueda-giro 4s ease-in-out infinite alternate;
+  transform-origin: center;
+}
+
+.rueda #center1 {
+  animation: rueda-giro 2s ease-in-out infinite alternate;
+  transform-origin: center;
+}
+
+@keyframes rueda-giro {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rueda #out2,
+  .rueda #out3,
+  .rueda #inner3,
+  .rueda #inner1,
+  .rueda #center1 {
+    animation: none;
+  }
+  .rueda-marco svg,
+  .rueda #center {
+    transition: none;
+  }
+}
