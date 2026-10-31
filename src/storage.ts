@@ -39,7 +39,8 @@ export function olvidarToken(): void {
 
 export function leerCache(): Pedido[] {
   try {
-    const datos: unknown = JSON.parse(localStorage.getItem(K_CACHE) ?? '[]');\r\n    return Array.isArray(datos) ? (datos as Pedido[]) : [];
+    const datos: unknown = JSON.parse(localStorage.getItem(K_CACHE) ?? '[]');
+    return Array.isArray(datos) ? (datos as Pedido[]) : [];
   } catch {
     return [];
   }
@@ -99,13 +100,26 @@ export function crearApi(token: string) {
   const escribir = async (cuerpo: Record<string, unknown>): Promise<Pedido[]> =>
     (await enviar(cuerpo)).items;
 
+  /** Varios modelos (y varios días) en una sola petición. Requiere la acción crearVarios en Code.gs. */
+  const crearVarios = async (items: DatosPedido[], dias: Dia[]): Promise<Pedido[]> => {
+    try {
+      return await escribir({ accion: 'crearVarios', items, dias });
+    } catch (e) {
+      if (e instanceof Error && e.message === 'Accion no valida') {
+        throw new Error(
+          'Falta actualizar Code.gs en Apps Script (acción crearVarios) y crear una versión nueva de la implementación.',
+        );
+      }
+      throw e;
+    }
+  };
+
   return {
     listar: async (): Promise<Pedido[]> =>
       (await leer(await fetch(`${url}?token=${encodeURIComponent(token)}`))).items,
     crear: (dia: Dia, item: DatosPedido) => escribir({ accion: 'crear', item: { ...item, dia } }),
     /** Crea el pedido en los 6 días con una sola petición (acción crearVarios). */
     crearEnTodos: (item: DatosPedido): Promise<Pedido[]> => crearVarios([item], DIAS.map((d) => d.id)),
-    /** Varios modelos (y varios días) en una sola petición. Requiere la acción crearVarios en Code.gs. */
     crearVarios,
     editar: (id: string, item: DatosPedido, dia?: Dia) =>
       escribir({ accion: 'editar', id, item: dia ? { ...item, dia } : item }),
