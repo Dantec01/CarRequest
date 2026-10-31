@@ -118,12 +118,15 @@ export default function Formulario({
   inicial?: Pedido;
   diaInicial: Dia;
   guardando: boolean;
-  /** Un elemento por modelo (al editar siempre es uno). */
+  /** Siempre un solo elemento: varios modelos se guardan juntos, uno por línea. */
   onGuardar: (dia: DiaOTodos, items: DatosPedido[]) => void;
   onCerrar: () => void;
 }) {
   const [dia, setDia] = useState<DiaOTodos>(inicial?.dia ?? diaInicial);
-  const [modelos, setModelos] = useState<string[]>([inicial?.modelo ?? '']);
+  const [modelos, setModelos] = useState<string[]>(() => {
+    const lista = (inicial?.modelo ?? '').split('\n');
+    return lista.length > 0 ? lista : [''];
+  });
   const [subastas, setSubastas] = useState<string[]>(() => {
     const lista = partir(inicial?.subasta ?? '');
     return lista.length > 0 ? lista : [''];
@@ -147,20 +150,15 @@ export default function Formulario({
     const base = Object.fromEntries(
       CAMPOS.map((c) => [c, c === 'nota' ? datos[c].trim() : limpiar(datos[c])]),
     ) as DatosPedido;
-    const nombres = lista.length > 0 ? lista : [''];
-    onGuardar(
-      dia,
-      nombres.map((modelo) => ({ ...base, modelo, subasta })),
-    );
+    // Varios modelos van en una sola tarjeta, uno por línea.
+    onGuardar(dia, [{ ...base, modelo: lista.join('\n'), subasta }]);
   };
 
   const etiquetaBoton = guardando
     ? 'Guardando…'
     : vacio
       ? 'Llena al menos un dato'
-      : lista.length > 1
-        ? `Guardar ${lista.length} pedidos`
-        : 'Guardar pedido';
+      : 'Guardar pedido';
 
   const campo = (c: Campo) => (
     <label key={c} className="flex flex-col gap-1 text-xs text-suave">
@@ -197,8 +195,8 @@ export default function Formulario({
           etiqueta="Modelo"
           valores={modelos}
           placeholder={AYUDA.modelo}
-          puedeAgregar={!inicial}
-          pie="Se creará un pedido por cada modelo, con los mismos datos de abajo."
+          puedeAgregar
+          pie="Se guardarán juntos en el mismo pedido, uno debajo de otro."
           onCambiar={(i, v) => setModelos((l) => l.map((m, j) => (j === i ? v : m)))}
           onAgregar={() => setModelos((l) => [...l, ''])}
           onQuitar={(i) => setModelos((l) => l.filter((_, j) => j !== i))}

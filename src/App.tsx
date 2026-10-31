@@ -150,16 +150,6 @@ function Aplicacion({ token, onSinAcceso }: { token: string; onSinAcceso: () => 
     const datos = items[0];
     if (!modal || modal.tipo === 'copiar') return;
     const m = modal;
-    if (m.tipo === 'nuevo' && items.length > 1) {
-      const dias: Dia[] = dia === 'todos' ? DIAS.map((d) => d.id) : [dia];
-      const total = items.length * dias.length;
-      const hecho = await ejecutar(() => api.crearVarios(items, dias), `${total} pedidos guardados`);
-      if (hecho) {
-        setModal(null);
-        if (!escritorio && dia !== 'todos') setDiaSel(dia);
-      }
-      return;
-    }
     const ok =
       m.tipo === 'nuevo'
         ? await ejecutar(

@@ -34,7 +34,13 @@ export default function Tarjeta({
     <article className="overflow-hidden rounded-[14px] border border-borde bg-white md:rounded-xl">
       <div className="flex flex-col gap-1 px-3.5 pb-2.5 pt-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-base font-bold md:text-sm">{pedido.modelo || 'Sin modelo'}</h3>
+          <div className="flex flex-col">
+            {(pedido.modelo ? pedido.modelo.split('\n') : ['Sin modelo']).map((m, i) => (
+              <h3 key={i} className="text-base font-bold md:text-sm">
+                {m}
+              </h3>
+            ))}
+          </div>
           {esNuevo(pedido) && (
             <span className="shrink-0 rounded-full bg-[#DDF3E4] px-2 py-0.5 text-[11px] font-bold text-[#1E7A3C]">
               Nuevo

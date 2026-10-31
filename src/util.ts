@@ -73,7 +73,7 @@ export function aTSV(items: Pedido[], conDia: boolean): string {
         p.nota,
       ];
       if (conDia) cols.unshift(largoDe(p.dia));
-      return cols.map(limpiar).join('\t');
+      return cols.map((c, i) => limpiar(i === (conDia ? 1 : 0) ? c.replace(/\n+/g, ', ') : c)).join('\t');
     })
     .join('\n');
 }
