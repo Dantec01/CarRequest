@@ -1,4 +1,4 @@
-﻿import type { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import Relojes from './Relojes';
 import Rueda from './Rueda';
 import { IconActualizar } from './Iconos';
@@ -19,10 +19,7 @@ export default function Cabecera({
     : null;
 
   const estado = hora && (
-    <p className="text-right text-[11px] leading-tight text-suave md:text-xs">
-      Actualizado a las
-      <br className="md:hidden" /> {hora}
-    </p>
+    <p className="text-xs text-suave md:text-right">Actualizado a las {hora}</p>
   );
 
   return (
@@ -36,15 +33,17 @@ export default function Cabecera({
             </h1>
           </div>
           <p className="hidden pl-[58px] text-sm text-suave md:block">
-            Tablero semanal Â· se repite cada semana
+            Tablero semanal · se repite cada semana
           </p>
         </div>
         <div className="order-3 flex w-full gap-2.5 md:order-2 md:w-auto md:items-center">
           {estado && <div className="hidden md:block">{estado}</div>}
           <Relojes />
         </div>
-        <div className="order-2 flex items-center gap-2 md:order-3">
-          {estado && <div className="md:hidden">{estado}</div>}
+        <div className="relative order-2 mb-4 flex items-center gap-2 self-start md:order-3 md:mb-0 md:self-center">
+          {estado && (
+            <div className="absolute right-0 top-full mt-0.5 whitespace-nowrap md:hidden">{estado}</div>
+          )}
           {acciones}
           <button
             type="button"
@@ -55,7 +54,7 @@ export default function Cabecera({
             className="fx-btn fx-btn--secondary fx-btn--shine flex h-11 items-center gap-2 rounded-[10px] border border-borde2 bg-white px-3 text-sm font-bold text-acento disabled:opacity-60 md:px-4"
           >
             <IconActualizar girando={cargando} />
-            <span className="hidden md:inline">{cargando ? 'Actualizandoâ€¦' : 'Actualizar'}</span>
+            <span className="hidden md:inline">{cargando ? 'Actualizando…' : 'Actualizar'}</span>
           </button>
         </div>
       </div>

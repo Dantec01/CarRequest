@@ -90,10 +90,39 @@
     }
   }
 
+  /* Efecto ping (onda que se expande) sobre el icono de descarga. */
+  .fxc {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .fxc-ping::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 9999px;
+    border: 1.5px solid #1f5a9e;
+    background-color: rgba(31, 90, 158, 0.18);
+    pointer-events: none;
+    animation: fxc-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+  @keyframes fxc-ping {
+    75%,
+    100% {
+      transform: scale(1.75);
+      opacity: 0;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .fx-btn,
     .fx-btn--shine::after {
       transition: none;
+    }
+    .fxc-ping::before {
+      animation: none;
     }
     .fx-btn:hover:not(:disabled),
     .fx-btn:active:not(:disabled) {

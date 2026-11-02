@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { DIAS, type Dia, type Pedido } from './types';
+import { DIAS, type Dia, type Pedido, type Resultado } from './types';
 
 export const ZONA_BOLIVIA = 'America/La_Paz';
 export const ZONA_JAPON = 'Asia/Tokyo';
@@ -54,49 +54,103 @@ export function filasDetalle(p: Pedido): string[] {
   ].filter(Boolean) as string[];
 }
 
-const limpiar = (s: string) => s.replace(/[\t\r\n]+/g, ' ');
+const CAMPOS_DATO_RES: (keyof Resultado)[] = [
+  'lote',
+  'subasta',
+  'chasis',
+  'anio',
+  'grado',
+  'km',
+  'color',
+  'puntaje',
+  'precio',
+];
 
-/** TSV sin fila de cabecera, listo para pegar en Sheets. */
-export function aTSV(items: Pedido[], conDia: boolean): string {
-  return items
-    .map((p) => {
-      const cols = [
-        p.modelo,
-        p.subasta,
-        p.chasis,
-        p.anio,
-        p.grado,
-        p.km,
-        p.color,
-        p.puntaje,
-        p.precio,
-        p.nota,
-      ];
-      if (conDia) cols.unshift(largoDe(p.dia));
-      return cols.map((c, i) => limpiar(i === (conDia ? 1 : 0) ? c.replace(/\n+/g, ', ') : c)).join('\t');
-    })
-    .join('\n');
+const esCeroOVacio = (s: string | undefined) => {
+  const t = (s ?? '').trim();
+  return t === '' || /^0+(\.0+)?$/.test(t);
+};
+
+/** True si la fila tiene datos reales; false si todos los campos (salvo modelo) son 0 o vacíos. */
+export function esResultadoValido(r: Resultado): boolean {
+  return CAMPOS_DATO_RES.some((c) => !esCeroOVacio(r[c]));
 }
 
-export async function copiarAlPortapapeles(texto: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(texto);
-    return true;
-  } catch {
-    try {
-      const area = document.createElement('textarea');
-      area.value = texto;
-      area.style.position = 'fixed';
-      area.style.opacity = '0';
-      document.body.appendChild(area);
-      area.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(area);
-      return ok;
-    } catch {
-      return false;
+export interface ResumenResultados {
+  total: number;
+  porModelo: { modelo: string; cantidad: number }[];
+  validos: Resultado[];
+  ultimaHora: string | null;
+}
+
+/** Arma el resumen (total y conteo por coche, incluidos los de 0 coincidencias) y filtra las filas reales. */
+export function armarResumenResultados(items: Resultado[]): ResumenResultados {
+  const mapa = new Map<string, number>();
+  const validos: Resultado[] = [];
+  let ultimaIso = '';
+
+  for (const r of items) {
+    const modelo = (r.modelo || '').trim() || 'Sin modelo';
+    if (!mapa.has(modelo)) mapa.set(modelo, 0);
+    if (esResultadoValido(r)) {
+      mapa.set(modelo, (mapa.get(modelo) ?? 0) + 1);
+      validos.push(r);
+    }
+    if (r.recibido && r.recibido > ultimaIso) ultimaIso = r.recibido;
+  }
+
+  let ultimaHora: string | null = null;
+  if (ultimaIso) {
+    const t = Date.parse(ultimaIso);
+    if (!Number.isNaN(t)) {
+      const f = new Date(t);
+      ultimaHora = `${fechaEn(f, ZONA_JAPON)} ${horaEn(f, ZONA_JAPON)} (hora Japón)`;
     }
   }
+
+  return {
+    total: validos.length,
+    porModelo: Array.from(mapa.entries()).map(([modelo, cantidad]) => ({ modelo, cantidad })),
+    validos,
+    ultimaHora,
+  };
+}
+
+const escaparCSV = (s: string) => {
+  const texto = (s ?? '').replace(/\r?\n/g, ' ').trim();
+  if (/[",;]/.test(texto)) return `"${texto.replace(/"/g, '""')}"`;
+  return texto;
+};
+
+/** Descarga un archivo CSV con BOM UTF-8 con las 10 columnas (Modelo primero). */
+export function descargarResultadosCSV(items: Resultado[], nombre: string): void {
+  const cabeceras = [
+    'Modelo',
+    'Lote',
+    'Subastas',
+    'Chasis',
+    'Año',
+    'Grado',
+    'km',
+    'Color',
+    'Puntaje',
+    'Precio inicial',
+  ];
+  const filas = items.map((r) =>
+    [r.modelo, r.lote, r.subasta, r.chasis, r.anio, r.grado, r.km, r.color, r.puntaje, r.precio]
+      .map(escaparCSV)
+      .join(','),
+  );
+  const contenido = '\uFEFF' + [cabeceras.join(','), ...filas].join('\r\n');
+  const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${nombre}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 export function useMediaQuery(consulta: string): boolean {

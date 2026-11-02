@@ -29,3 +29,6 @@ export const IconActualizar = ({ girando }: { girando?: boolean }) => (
     className={girando ? 'h-5 w-5 animate-spin' : 'h-5 w-5'}
   />
 );
+export const IconDescargar = ({ className }: { className?: string }) => (
+  <Svg d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" className={className} />
+);

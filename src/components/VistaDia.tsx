@@ -1,26 +1,29 @@
-import { DIAS, type Dia, type Pedido } from '../types';
-import { largoDe } from '../util';
+import { DIAS, type Dia, type Pedido, type Resultado } from '../types';
+import { esResultadoValido, largoDe } from '../util';
 import { IconMas } from './Iconos';
 import Tarjeta, { type AccionesTarjeta } from './Tarjeta';
 
 export default function VistaDia({
   pedidos,
+  resultados,
   diaSel,
   onDia,
   acciones,
   deshabilitado,
   onNuevo,
-  onCopiarTSV,
+  onResultados,
 }: {
   pedidos: Pedido[];
+  resultados: Resultado[];
   diaSel: Dia;
   onDia: (dia: Dia) => void;
   acciones: AccionesTarjeta;
   deshabilitado: boolean;
   onNuevo: (dia: Dia) => void;
-  onCopiarTSV: (dia: Dia) => void;
+  onResultados: () => void;
 }) {
   const delDia = pedidos.filter((p) => p.dia === diaSel);
+  const totalCoincidencias = resultados.filter(esResultadoValido).length;
 
   return (
     <main className="pb-28">
@@ -48,25 +51,28 @@ export default function VistaDia({
         })}
       </div>
 
-      <div className="mt-4 flex items-baseline justify-between px-5">
+      <div className="mt-4 flex items-center justify-between px-5">
         <h2 className="text-lg font-bold">
           {largoDe(diaSel)}{' '}
           <span className="text-[13px] font-normal text-suave">
             · {delDia.length} {delDia.length === 1 ? 'pedido' : 'pedidos'}
           </span>
         </h2>
-        {delDia.length > 0 && (
-          <button
-            type="button"
-            onClick={() => onCopiarTSV(diaSel)}
-            className="min-h-11 text-sm font-bold text-acento"
-          >
-            Copiar TSV
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={onResultados}
+          className="fx-btn fx-btn--secondary fx-btn--shine flex min-h-11 items-center gap-1.5 rounded-[10px] border border-borde2 bg-white px-3 text-sm font-bold text-acento"
+        >
+          Resultados
+          {totalCoincidencias > 0 && (
+            <span className="rounded-full bg-[#1E7A3C] px-2 py-0.5 text-xs font-bold leading-none text-white">
+              {totalCoincidencias}
+            </span>
+          )}
+        </button>
       </div>
 
-      <div className="mt-1 flex flex-col gap-2.5 px-5">
+      <div className="mt-2 flex flex-col gap-2.5 px-5">
         {delDia.length === 0 && (
           <div className="rounded-xl border border-dashed border-[#8A96A3] p-4 text-sm text-suave">
             Sin pedidos para este día.

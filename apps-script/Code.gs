@@ -27,7 +27,14 @@
  *     copiarSemana  { accion:"copiarSemana", id }   // a todos los demas dias
  *     crearVarios   { accion:"crearVarios", items:[{...}, ...], dias:["lunes", ...] }
  *                   // una fila por modelo x dia, en una sola peticion (max. 20 items)
- *   Toda escritura responde { ok, version, resultado, items } con el tablero ya
+ *     guardarResultados { accion:"guardarResultados", token, dia:"martes",
+ *                   resultados:[{ modelo, lote, subasta, chasis, anio, grado, km, color, puntaje, precio }] }
+ *                   // agrega debajo de lo existente; ignora dia+modelo+lote+subasta repetidos (max. 500).
+ *                   // cada envio o lectura limpia automaticamente los resultados vencidos (a las 23:59 JST del mismo dia).
+ *                   // token: TOKEN o TOKEN_RESULTADOS (ver crearTokenResultados). Responde { ok, resultado:{ agregados, omitidos } }
+ * - Leer resultados: GET <URL>?token=TOKEN&recurso=resultados -> { ok, resultados }
+ *   Limpieza: automatica al vencer las 23:59 JST del mismo dia; tambien crearDisparadorLimpieza() (diario) o limpiarResultados() (vacia todo).
+ *   Toda escritura (salvo guardarResultados) responde { ok, version, resultado, items } con el tablero ya
  *   actualizado, para refrescar la pantalla sin otra peticion.
  */
 
@@ -36,6 +43,11 @@ const COLUMNAS = ['id', 'dia', 'modelo', 'subasta', 'chasis', 'anio', 'grado', '
 const CAMPOS_EDITABLES = ['modelo', 'subasta', 'chasis', 'anio', 'grado', 'km', 'color', 'puntaje', 'precio', 'nota'];
 const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
 const MAX_TEXTO = 500;
+
+const HOJA_RES = 'Resultados';
+const COL_RES = ['clave', 'dia', 'modelo', 'lote', 'subasta', 'chasis', 'anio', 'grado', 'km', 'color', 'puntaje', 'precio', 'recibido'];
+const CAMPOS_RES = ['modelo', 'lote', 'subasta', 'chasis', 'anio', 'grado', 'km', 'color', 'puntaje', 'precio'];
+const MAX_RESULTADOS = 500;
 
 // ---------- Configuracion inicial ----------
 
@@ -63,6 +75,9 @@ function doGet(e) {
   try {
     const p = (e && e.parameter) || {};
     verificarToken_(p.token);
+    if (p.recurso === 'resultados') {
+      return json_({ ok: true, resultados: leerResultados_() });
+    }
     const version = leerVersion_();
     if (p.since && p.since === version) {
       return json_({ ok: true, cambios: false, version: version });
@@ -77,6 +92,12 @@ function doPost(e) {
   const lock = LockService.getScriptLock();
   try {
     const body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    if (body.accion === 'guardarResultados') {
+      // La automatizacion puede usar TOKEN_RESULTADOS (solo permite esta accion).
+      verificarTokenResultados_(body.token);
+      lock.waitLock(10000);
+      return json_({ ok: true, resultado: guardarResultados_(body) });
+    }
     verificarToken_(body.token);
     lock.waitLock(10000);
 
@@ -209,7 +230,150 @@ function agregarFilas_(items, dias) {
   rango.setValues(filas);
   return ids;
 }
+// ---------- Resultados (los envia la automatizacion) ----------
+
+/**
+ * Los resultados se agregan debajo de los anteriores. Un resultado repetido
+ * (mismo dia + modelo + lote + subasta) se ignora.
+ * Los resultados se eliminan a las 23:59 (hora Japon) del mismo dia de la subasta.
+ */
+function guardarResultados_(body) {
+  const dia = validarDia_(body.dia);
+  const lista = body.resultados;
+  if (!Array.isArray(lista) || lista.length === 0) throw new Error('Indica al menos un resultado');
+  if (lista.length > MAX_RESULTADOS) throw new Error('Maximo ' + MAX_RESULTADOS + ' resultados por envio');
+
+  limpiarResultadosVencidos_();
+  const hoja = hojaAuxiliar_(HOJA_RES, COL_RES);
+  const ultima = hoja.getLastRow();
+  const claves = {};
+  if (ultima >= 2) {
+    hoja.getRange(2, 1, ultima - 1, 1).getValues().forEach(function (f) { claves[String(f[0])] = true; });
+  }
+
+  const ahora = new Date().toISOString();
+  const filas = [];
+  let omitidos = 0;
+  lista.forEach(function (r) {
+    const item = r || {};
+    const obj = {};
+    CAMPOS_RES.forEach(function (c) { obj[c] = texto_(item[c]); });
+    const clave = [dia, obj.modelo, obj.lote, obj.subasta].join('|').toLowerCase();
+    if (claves[clave]) { omitidos++; return; }
+    claves[clave] = true;
+    obj.clave = clave;
+    obj.dia = dia;
+    obj.recibido = ahora;
+    filas.push(COL_RES.map(function (c) { return obj[c]; }));
+  });
+  agregarEnHoja_(hoja, filas, COL_RES.length);
+  return { agregados: filas.length, omitidos: omitidos };
+}
+
+function leerResultados_() {
+  limpiarResultadosVencidos_();
+  const hoja = hojaAuxiliar_(HOJA_RES, COL_RES);
+  const ultima = hoja.getLastRow();
+  if (ultima < 2) return [];
+  return hoja.getRange(2, 1, ultima - 1, COL_RES.length).getValues()
+    .filter(function (f) { return f[0] !== ''; })
+    .map(function (f) {
+      const obj = {};
+      COL_RES.forEach(function (c, i) { if (c !== 'clave') obj[c] = f[i] == null ? '' : String(f[i]); });
+      return obj;
+    });
+}
+
+/** True si ya pasaron las 23:59:59 (hora Japon, UTC+9) del mismo dia en que se recibio. */
+function estaVencidoJST_(isoRecibido) {
+  const t = Date.parse(isoRecibido);
+  if (isNaN(t)) return false;
+  const OFFSET_JST = 9 * 3600 * 1000;
+  const MS_DIA = 86400 * 1000;
+  const diaRecibidoJST = Math.floor((t + OFFSET_JST) / MS_DIA);
+  const finMismoDiaUTC = (diaRecibidoJST + 1) * MS_DIA - OFFSET_JST - 1;
+  return Date.now() > finMismoDiaUTC;
+}
+
+/** Elimina de la hoja las filas cuyo dia (en hora Japon) ya termino (23:59 JST). */
+function limpiarResultadosVencidos_() {
+  const hoja = hojaAuxiliar_(HOJA_RES, COL_RES);
+  const ultima = hoja.getLastRow();
+  if (ultima < 2) return;
+  const iRecibido = COL_RES.indexOf('recibido');
+  const todas = hoja.getRange(2, 1, ultima - 1, COL_RES.length).getValues();
+  const vigentes = todas.filter(function (f) {
+    return f[0] !== '' && !estaVencidoJST_(String(f[iRecibido] || ''));
+  });
+  if (vigentes.length === todas.length) return;
+  hoja.deleteRows(2, ultima - 1);
+  agregarEnHoja_(hoja, vigentes, COL_RES.length);
+}
+
+/** Borra todos los resultados inmediatamente (ejecucion manual). */
+function limpiarResultados() {
+  const hoja = hojaAuxiliar_(HOJA_RES, COL_RES);
+  const ultima = hoja.getLastRow();
+  if (ultima >= 2) hoja.deleteRows(2, ultima - 1);
+}
+
+/**
+ * Ejecutala una vez: pone la zona horaria del script en Asia/Tokyo y programa
+ * limpiarResultados() todos los dias entre las 23:00 y 23:59 (hora Japon).
+ */
+function crearDisparadorLimpieza() {
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    const fn = t.getHandlerFunction();
+    if (fn === 'limpiarResultados' || fn === 'limpiarResultadosVencidos_') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('limpiarResultados').timeBased().inTimezone('Asia/Tokyo').everyDays(1).atHour(23).nearMinute(59).create();
+}
+
+/** Ejecutala una vez para generar el token que usara la automatizacion (ver Registros). */
+function crearTokenResultados() {
+  const props = PropertiesService.getScriptProperties();
+  if (!props.getProperty('TOKEN_RESULTADOS')) {
+    props.setProperty('TOKEN_RESULTADOS', Utilities.getUuid().replace(/-/g, ''));
+  }
+  Logger.log('TOKEN_RESULTADOS: ' + props.getProperty('TOKEN_RESULTADOS'));
+}
+
 // ---------- Utilidades ----------
+
+/** Hoja auxiliar (Resultados): se crea sola la primera vez y actualiza cabeceras si cambian. */
+function hojaAuxiliar_(nombre, columnas) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let hoja = ss.getSheetByName(nombre);
+  if (!hoja) {
+    hoja = ss.insertSheet(nombre);
+    hoja.getRange(1, 1, hoja.getMaxRows(), columnas.length).setNumberFormat('@');
+    hoja.getRange(1, 1, 1, columnas.length).setValues([columnas]).setFontWeight('bold');
+    hoja.setFrozenRows(1);
+  } else if (hoja.getRange(1, 1, 1, columnas.length).getValues()[0].join('|') !== columnas.join('|')) {
+    hoja.getRange(1, 1, hoja.getMaxRows(), columnas.length).setNumberFormat('@');
+    hoja.getRange(1, 1, 1, columnas.length).setValues([columnas]).setFontWeight('bold');
+  }
+  return hoja;
+}
+
+/** Agrega filas debajo de la ultima, en una sola escritura. */
+function agregarEnHoja_(hoja, filas, columnas) {
+  if (filas.length === 0) return;
+  const inicio = hoja.getLastRow() + 1;
+  const falta = inicio + filas.length - 1 - hoja.getMaxRows();
+  if (falta > 0) hoja.insertRowsAfter(hoja.getMaxRows(), falta);
+  const rango = hoja.getRange(inicio, 1, filas.length, columnas);
+  rango.setNumberFormat('@');
+  rango.setValues(filas);
+}
+
+function verificarTokenResultados_(token) {
+  const props = PropertiesService.getScriptProperties();
+  const principal = props.getProperty('TOKEN');
+  const resultados = props.getProperty('TOKEN_RESULTADOS');
+  const valido = (principal && token === principal) || (resultados && token === resultados);
+  if (!valido) throw new Error('No autorizado');
+}
 
 function hoja_() {
   const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA);

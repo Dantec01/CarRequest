@@ -32,3 +32,18 @@ export type Pedido = DatosPedido & {
   orden: string;
   actualizado: string;
 };
+
+export interface Resultado {
+  dia: Dia;
+  modelo: string;
+  lote: string;
+  subasta: string;
+  chasis: string;
+  anio: string;
+  grado: string;
+  km: string;
+  color: string;
+  puntaje: string;
+  precio: string;
+  recibido: string;
+}

@@ -1,4 +1,4 @@
-import { DIAS, type DatosPedido, type Dia, type Pedido } from './types';
+import { DIAS, type DatosPedido, type Dia, type Pedido, type Resultado } from './types';
 
 /**
  * Único punto de acceso a los datos. Hoy habla con Google Apps Script (Sheets).
@@ -8,6 +8,7 @@ import { DIAS, type DatosPedido, type Dia, type Pedido } from './types';
 const API_URL = import.meta.env.VITE_API_URL;
 const K_TOKEN = 'carrequest.token';
 const K_CACHE = 'carrequest.cache.v1';
+const K_CACHE_RES = 'carrequest.resultados.v2';
 
 export class ErrorNoAutorizado extends Error {}
 
@@ -54,10 +55,28 @@ function guardarCache(items: Pedido[]): void {
   }
 }
 
+export function leerCacheResultados(): Resultado[] {
+  try {
+    const datos: unknown = JSON.parse(localStorage.getItem(K_CACHE_RES) ?? '[]');
+    return Array.isArray(datos) ? (datos as Resultado[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function guardarCacheResultados(items: Resultado[]): void {
+  try {
+    localStorage.setItem(K_CACHE_RES, JSON.stringify(items));
+  } catch {
+    /* sin espacio: no pasa nada */
+  }
+}
+
 interface Respuesta {
   ok: boolean;
   error?: string;
   items?: Pedido[];
+  resultados?: Resultado[];
   resultado?: { id?: string; ids?: string[] };
 }
 
@@ -66,7 +85,7 @@ interface Leida {
   resultado?: Respuesta['resultado'];
 }
 
-async function leer(r: Response): Promise<Leida> {
+async function parsearRespuesta(r: Response): Promise<Respuesta> {
   if (!r.ok) throw new Error(`Error de red (${r.status})`);
   let datos: Respuesta;
   try {
@@ -78,6 +97,11 @@ async function leer(r: Response): Promise<Leida> {
     if (datos.error === 'No autorizado') throw new ErrorNoAutorizado(datos.error);
     throw new Error(datos.error ?? 'Error desconocido');
   }
+  return datos;
+}
+
+async function leer(r: Response): Promise<Leida> {
+  const datos = await parsearRespuesta(r);
   const items = datos.items ?? [];
   guardarCache(items);
   return { items, resultado: datos.resultado };
@@ -117,6 +141,14 @@ export function crearApi(token: string) {
   return {
     listar: async (): Promise<Pedido[]> =>
       (await leer(await fetch(`${url}?token=${encodeURIComponent(token)}`))).items,
+    listarResultados: async (): Promise<Resultado[]> => {
+      const datos = await parsearRespuesta(
+        await fetch(`${url}?token=${encodeURIComponent(token)}&recurso=resultados`),
+      );
+      const lista = datos.resultados ?? [];
+      guardarCacheResultados(lista);
+      return lista;
+    },
     crear: (dia: Dia, item: DatosPedido) => escribir({ accion: 'crear', item: { ...item, dia } }),
     /** Crea el pedido en los 6 días con una sola petición (acción crearVarios). */
     crearEnTodos: (item: DatosPedido): Promise<Pedido[]> => crearVarios([item], DIAS.map((d) => d.id)),

@@ -7,17 +7,19 @@ import SelectorDias from './components/SelectorDias';
 import Tablero from './components/Tablero';
 import type { AccionesTarjeta } from './components/Tarjeta';
 import VistaDia from './components/VistaDia';
+import VistaResultados from './components/VistaResultados';
 import {
   ErrorNoAutorizado,
   crearApi,
   guardarToken,
   hayApiConfigurada,
   leerCache,
+  leerCacheResultados,
   obtenerToken,
   olvidarToken,
 } from './storage';
-import { DIAS, type DatosPedido, type Dia, type Pedido } from './types';
-import { aTSV, copiarAlPortapapeles, diaDeHoy, largoDe, useMediaQuery } from './util';
+import { type DatosPedido, type Dia, type Pedido, type Resultado } from './types';
+import { diaDeHoy, esResultadoValido, useMediaQuery } from './util';
 
 type Modal =
   | { tipo: 'nuevo'; dia: Dia }
@@ -70,11 +72,13 @@ function Aplicacion({ token, onSinAcceso }: { token: string; onSinAcceso: () => 
   const hoy = useMemo(() => diaDeHoy(), []);
 
   const [pedidos, setPedidos] = useState<Pedido[]>(() => leerCache());
+  const [resultados, setResultados] = useState<Resultado[]>(() => leerCacheResultados());
   const [cargando, setCargando] = useState(false);
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ultima, setUltima] = useState<Date | null>(null);
   const [diaSel, setDiaSel] = useState<Dia>(hoy);
+  const [viendoRes, setViendoRes] = useState(false);
   const [modal, setModal] = useState<Modal | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
@@ -99,7 +103,15 @@ function Aplicacion({ token, onSinAcceso }: { token: string; onSinAcceso: () => 
     setCargando(true);
     setError(null);
     try {
-      setPedidos(await api.listar());
+      const [lista, res] = await Promise.all([
+        api.listar(),
+        api.listarResultados().catch((e) => {
+          if (e instanceof ErrorNoAutorizado) throw e;
+          return null;
+        }),
+      ]);
+      setPedidos(lista);
+      if (res) setResultados(res);
       setUltima(new Date());
     } catch (e) {
       fallo(e);
@@ -171,14 +183,7 @@ function Aplicacion({ token, onSinAcceso }: { token: string; onSinAcceso: () => 
     if (await ejecutar(() => api.copiar(p.id, dias), texto)) setModal(null);
   };
 
-  const copiarTSV = async (items: Pedido[], conDia: boolean, etiqueta: string) => {
-    if (items.length === 0) {
-      avisar('No hay pedidos para copiar');
-      return;
-    }
-    const ok = await copiarAlPortapapeles(aTSV(items, conDia));
-    avisar(ok ? `${etiqueta}: copiado (TSV)` : 'No se pudo copiar');
-  };
+  const totalResultados = resultados.filter(esResultadoValido).length;
 
   return (
     <div className="min-h-dvh">
@@ -199,10 +204,19 @@ function Aplicacion({ token, onSinAcceso }: { token: string; onSinAcceso: () => 
               </button>
               <button
                 type="button"
-                onClick={() => void copiarTSV(pedidos, true, 'Semana')}
-                className="fx-btn fx-btn--secondary fx-btn--shine h-11 rounded-[10px] border border-borde2 bg-white px-4 text-sm font-bold"
+                onClick={() => setViendoRes((v) => !v)}
+                className={`fx-btn fx-btn--secondary fx-btn--shine flex h-11 items-center gap-2 rounded-[10px] border px-4 text-sm font-bold ${
+                  viendoRes
+                    ? 'border-acento bg-acento-claro text-acento'
+                    : 'border-borde2 bg-white text-tinta'
+                }`}
               >
-                Copiar TSV
+                Resultados
+                {totalResultados > 0 && (
+                  <span className="rounded-full bg-[#1E7A3C] px-2 py-0.5 text-xs font-bold leading-none text-white">
+                    {totalResultados}
+                  </span>
+                )}
               </button>
             </>
           ) : undefined
@@ -224,26 +238,24 @@ function Aplicacion({ token, onSinAcceso }: { token: string; onSinAcceso: () => 
       {escritorio ? (
         <Tablero
           pedidos={pedidos}
+          resultados={resultados}
           hoy={hoy}
+          viendoResultados={viendoRes}
           acciones={acciones}
           deshabilitado={ocupado}
           onNuevo={(dia) => setModal({ tipo: 'nuevo', dia })}
+          onCerrarResultados={() => setViendoRes(false)}
         />
       ) : (
         <VistaDia
           pedidos={pedidos}
+          resultados={resultados}
           diaSel={diaSel}
           onDia={setDiaSel}
           acciones={acciones}
           deshabilitado={ocupado}
           onNuevo={(dia) => setModal({ tipo: 'nuevo', dia })}
-          onCopiarTSV={(dia) =>
-            void copiarTSV(
-              pedidos.filter((p) => p.dia === dia),
-              false,
-              largoDe(dia),
-            )
-          }
+          onResultados={() => setViendoRes(true)}
         />
       )}
 
@@ -263,6 +275,13 @@ function Aplicacion({ token, onSinAcceso }: { token: string; onSinAcceso: () => 
           guardando={ocupado}
           onCopiar={(dias) => void copiarDias(modal.pedido, dias)}
           onCerrar={() => setModal(null)}
+        />
+      )}
+
+      {!escritorio && viendoRes && (
+        <VistaResultados
+          resultados={resultados}
+          onCerrar={() => setViendoRes(false)}
         />
       )}
 
