@@ -1,4 +1,4 @@
-# CarRequest - memoria del proyecto
+# CarsRequest - memoria del proyecto
 
 Lee esto primero. Actualiza la sección "Estado" (y lo que haya cambiado) al terminar cada sesión.
 
@@ -6,7 +6,7 @@ Lee esto primero. Actualiza la sección "Estado" (y lo que haya cambiado) al ter
 Tablero semanal para organizar los pedidos de vehículos de subastas japonesas que un superior le pasa a Dan (dev). Reemplaza el desorden de WhatsApp. El superior usa sobre todo el móvil; Dan usa PC. Mobile-first.
 
 ## Decisiones tomadas (no reabrir sin que Dan lo pida)
-- Nombre: **CarRequest**.
+- Nombre: **CarsRequest**.
 - Días **lunes a sábado, sin fechas**. Semana tipo que se repite: lo que se busca el lunes se busca todos los lunes.
 - **No hay entrada de "pegar mensajes de WhatsApp"**: Dan quiere obligar al superior a mandar la información ordenada.
 - Formulario: un campo por dato, **todos opcionales**: Modelo, Subasta, Chasis, Año, Grado, Km, Color, Puntaje, Precio, Nota.
@@ -17,7 +17,7 @@ Tablero semanal para organizar los pedidos de vehículos de subastas japonesas q
 - Selector "Para el día" del formulario: Lunes a Sábado y, **solo al crear**, la opción **"Todos los días"** (primera de la lista). En edición no aparece.
 - **Sin estado** en las tarjetas por ahora (Pendiente/En proceso/Hecho ocultos; quizá vuelva como columna `estado`).
 - Iconos bajo cada tarjeta, separados por línea fina: editar, copiar a otro día, copiar a toda la semana, eliminar (rojo, al final). Copiar a la semana y eliminar piden confirmación (`window.confirm`).
-- Cabecera: **icono animado `Rueda`** (anillos y arcos concéntricos que giran; adaptado de un loader de Uiverse.io de Nawsome; `Rueda.tsx` + `Rueda.css`, sin styled-components; azul `#1F5A9E` y carbón `#23262B`; 48 px; las capas se separan al pasar el ratón; se detiene con `prefers-reduced-motion`) a la izquierda del título, en la misma fila que "CarRequest" (el título lleva degradado de texto, gris carbón `#23262B` a azul `#1F5A9E`, mitad y mitad con mezcla en el centro, con `bg-clip-text`); subtítulo debajo (solo PC) alineado con el título; relojes de **Japón** (`Asia/Tokyo`) y **Bolivia** (`America/La_Paz`); botón Actualizar con icono de dos flechas circulares (estilo refresh-cw) que gira mientras carga.
+- Cabecera: **icono animado `Rueda`** (anillos y arcos concéntricos que giran; adaptado de un loader de Uiverse.io de Nawsome; `Rueda.tsx` + `Rueda.css`, sin styled-components; azul `#1F5A9E` y carbón `#23262B`; 48 px; las capas se separan al pasar el ratón; se detiene con `prefers-reduced-motion`) a la izquierda del título, en la misma fila que "CarsRequest" (el título lleva degradado de texto, gris carbón `#23262B` a azul `#1F5A9E`, mitad y mitad con mezcla en el centro, con `bg-clip-text`); subtítulo debajo (solo PC) alineado con el título; relojes de **Japón** (`Asia/Tokyo`) y **Bolivia** (`America/La_Paz`); botón Actualizar con icono de dos flechas circulares (estilo refresh-cw) que gira mientras carga.
 - El día marcado como **hoy** (y el día inicial en móvil) se calcula con la hora de **Japón** (Asia/Tokyo), no la de Bolivia. Domingo cae en lunes.
 - Solo lo usan dos personas.
 - **Sin backend propio ni Supabase/BD**: datos en **Google Sheets + Apps Script**.
@@ -75,7 +75,7 @@ Vite 5 + React 18 + TypeScript (strict) + Tailwind 3 + PWA (`vite-plugin-pwa`). 
 - [x] Iconos PNG 192/512 para la PWA (`public/icon-192.png`, `icon-512.png`).
 - [x] Respaldo de `Code.gs` en `apps-script/`. **Repo en GitHub: https://github.com/Dantec01/CarRequest.git (rama main).**
 - [ ] **Dan debe pegar el nuevo `Code.gs` en Apps Script y crear versión nueva** (copiar/crearVarios ahora hacen una sola lectura/escritura en bloque; `ordenMaximo_` lee solo las columnas dia y orden). Hasta entonces `Todos los días` falla con `Accion no valida` si el script viejo no tiene `crearVarios` (sí lo tiene).
-- [ ] Despliegue en Vercel (variable `VITE_API_URL`).
+- [x] Desplegado en Vercel: **https://carsrequest.vercel.app** (proyecto `carsrequest`; `VITE_API_URL` solo en Producción). Redesplegar: `vercel deploy --prod` desde esta carpeta (la carpeta está enlazada; `.vercel` no se sube a git).
 - [x] `Code.gs` actualizado por Dan en Apps Script con la acción `crearVarios` (confirmado; falta probar guardar varios modelos). Si da "Falta actualizar Code.gs", comprobar que creó una versión nueva de la implementación.
 - [ ] Autocompletar (propuesto, **pendiente de que Dan elija**): lista guardada en una pestaña "Opciones" de la hoja (`campo | valor`, una fila por valor) para Modelo, Subasta, Color, Grado y Puntaje, más los valores ya usados en los pedidos; los valores nuevos se agregan solos al guardar; en el formulario con `<datalist>` (o botones rápidos para Subasta). Requiere cambiar `Code.gs` y crear versión nueva. Alternativa mínima: solo sugerir valores ya usados en los pedidos (sin tocar `Code.gs`).
 - [ ] Ideas futuras (solo si Dan las pide): estado de pedidos con reinicio semanal, arrastrar tarjetas entre días en PC, aviso en tiempo real (hoy descartado).

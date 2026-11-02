@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'CarRequest',
-        short_name: 'CarRequest',
+        name: 'CarsRequest',
+        short_name: 'CarsRequest',
         description: 'Tablero semanal de pedidos de vehículos de subasta',
         lang: 'es',
         theme_color: '#1F5A9E',

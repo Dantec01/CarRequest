@@ -1,6 +1,6 @@
 <div align="center">
 
-# CarRequest
+# CarsRequest
 
 **Tablero semanal para organizar pedidos de vehículos de subastas japonesas.**
 
@@ -20,7 +20,7 @@
 
 ## Qué es
 
-CarRequest reemplaza el desorden de los mensajes de WhatsApp. Quien hace los pedidos los ordena por día de la semana, con un campo para cada dato, y quien los busca en las subastas los ve de un vistazo.
+CarsRequest reemplaza el desorden de los mensajes de WhatsApp. Quien hace los pedidos los ordena por día de la semana, con un campo para cada dato, y quien los busca en las subastas los ve de un vistazo.
 
 - **Semana tipo que se repite:** de lunes a sábado, sin fechas. Lo que se busca el lunes se busca todos los lunes.
 - **Mobile first:** pensado para usarse sobre todo desde el móvil, con vista de escritorio en 6 columnas.

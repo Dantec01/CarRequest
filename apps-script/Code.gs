@@ -1,8 +1,8 @@
 /**
- * CarRequest - API en Google Apps Script (Google Sheets como base de datos)
+ * CarsRequest - API en Google Apps Script (Google Sheets como base de datos)
  *
  * INSTALACION
- * 1. Crea una hoja de Google Sheets nueva (ej. "CarRequest").
+ * 1. Crea una hoja de Google Sheets nueva (ej. "CarsRequest").
  * 2. Extensiones > Apps Script. Borra el codigo de ejemplo y pega este archivo.
  * 3. Ejecuta la funcion setup() una vez (te pedira permisos).
  *    Crea la hoja "Pedidos" con sus columnas y genera el TOKEN.

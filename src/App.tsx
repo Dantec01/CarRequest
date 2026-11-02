@@ -31,7 +31,7 @@ export default function App() {
   if (!hayApiConfigurada) {
     return (
       <div className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-2 px-5">
-        <h1 className="text-2xl font-bold text-acento">CarRequest</h1>
+        <h1 className="text-2xl font-bold text-acento">CarsRequest</h1>
         <p className="text-sm text-suave">
           Falta la variable <b>VITE_API_URL</b> (la URL de Apps Script). Revisa el archivo .env.local.
         </p>
