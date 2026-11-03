@@ -24,7 +24,7 @@ export default function VistaResultados({
   const diaEtiqueta = resultados[0]?.dia ? ` · ${largoDe(resultados[0].dia)}` : '';
 
   return (
-    <div className="fixed inset-0 z-40 h-dvh w-full overflow-y-auto bg-fondo px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))]">
+    <div className="ios-sheet fixed inset-0 z-40 h-dvh w-full overflow-y-auto bg-fondo px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))]">
       <div className="mb-2 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold">Resultados{diaEtiqueta}</h2>
@@ -58,14 +58,14 @@ export default function VistaResultados({
 
       {/* Cuadro de resumen armado por la web: total de coincidencias y desglose por modelo */}
       <div className="mb-3 rounded-xl border border-borde bg-white p-3 text-sm">
-        <div className="flex justify-between">
-          <span className="text-suave">Total coincidencias</span>
-          <b>{total}</b>
+        <div className="flex justify-between font-bold text-tinta">
+          <span>Total coincidencias</span>
+          <span>{total}</span>
         </div>
         {porModelo.map((m) => (
-          <div key={m.modelo} className="mt-1 flex justify-between">
-            <span className="text-suave">{m.modelo}</span>
-            <b className={m.cantidad === 0 ? 'text-suave' : 'text-tinta'}>{m.cantidad}</b>
+          <div key={m.modelo} className="mt-1 flex justify-between text-suave">
+            <span>{m.modelo}</span>
+            <span>{m.cantidad}</span>
           </div>
         ))}
       </div>

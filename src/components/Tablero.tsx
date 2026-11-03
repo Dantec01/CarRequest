@@ -24,14 +24,14 @@ export default function Tablero({
 }) {
   if (viendoResultados) {
     return (
-      <main className="px-6 pb-8">
+      <main className="ios-view px-6 pb-8">
         <PanelResultadosPC resultados={resultados} onCerrar={onCerrarResultados} />
       </main>
     );
   }
 
   return (
-    <main className="overflow-x-auto px-6 pb-8">
+    <main className="ios-view overflow-x-auto px-6 pb-8">
       {/* Todas las columnas llevan el mismo relleno; "hoy" solo cambia el fondo,
           así las cabeceras y las tarjetas quedan alineadas entre días. */}
       <div className="grid grid-cols-[repeat(6,minmax(200px,1fr))] items-start">
@@ -131,17 +131,17 @@ function PanelResultadosPC({
         </div>
 
         <div className="flex flex-wrap gap-2 text-sm">
-          <div className="flex items-center gap-2 rounded-lg bg-acento-claro px-3 py-1.5">
-            <span className="text-acento">Total coincidencias</span>
-            <b className="text-acento">{total}</b>
+          <div className="flex items-center gap-2 rounded-lg bg-acento-claro px-3 py-1.5 font-bold text-acento">
+            <span>Total coincidencias</span>
+            <span>{total}</span>
           </div>
           {porModelo.map((m) => (
             <div
               key={m.modelo}
-              className="flex items-center gap-2 rounded-lg border border-borde bg-fondo px-3 py-1.5"
+              className="flex items-center gap-2 rounded-lg border border-borde bg-fondo px-3 py-1.5 text-suave"
             >
-              <span className="text-suave">{m.modelo}</span>
-              <b className={m.cantidad === 0 ? 'text-suave' : 'text-tinta'}>{m.cantidad}</b>
+              <span>{m.modelo}</span>
+              <span>{m.cantidad}</span>
             </div>
           ))}
         </div>

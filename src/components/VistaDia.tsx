@@ -51,7 +51,7 @@ export default function VistaDia({
         })}
       </div>
 
-      <div className="mt-4 flex items-center justify-between px-5">
+      <div key={diaSel} className="ios-view mt-4 flex items-center justify-between px-5">
         <h2 className="text-lg font-bold">
           {largoDe(diaSel)}{' '}
           <span className="text-[13px] font-normal text-suave">
@@ -72,7 +72,7 @@ export default function VistaDia({
         </button>
       </div>
 
-      <div className="mt-2 flex flex-col gap-2.5 px-5">
+      <div key={`lista-${diaSel}`} className="ios-view mt-2 flex flex-col gap-2.5 px-5">
         {delDia.length === 0 && (
           <div className="rounded-xl border border-dashed border-[#8A96A3] p-4 text-sm text-suave">
             Sin pedidos para este día.

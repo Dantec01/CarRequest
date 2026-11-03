@@ -35,7 +35,7 @@ export default function Hoja({
 
   return (
     <div
-      className={`fixed inset-0 z-40 flex justify-center bg-black/40 ${contenedor}`}
+      className={`ios-backdrop fixed inset-0 z-40 flex justify-center bg-black/40 ${contenedor}`}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onCerrar();
       }}
@@ -44,7 +44,7 @@ export default function Hoja({
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
-        className={`w-full overflow-y-auto bg-fondo p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] md:pb-5 ${panel}`}
+        className={`ios-sheet w-full overflow-y-auto bg-fondo p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] md:pb-5 ${panel}`}
       >
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-xl font-bold">{titulo}</h2>

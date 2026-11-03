@@ -116,12 +116,72 @@
     }
   }
 
+  /* Animaciones estilo iOS (curva spring de Apple: cubic-bezier(0.32, 0.72, 0, 1))
+     usando solo transform y opacity para 60fps en GPU sin reflujo. */
+  .ios-backdrop {
+    animation: ios-fade 220ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+  .ios-sheet {
+    will-change: transform, opacity;
+    animation: ios-sheet-up 340ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+  .ios-view {
+    will-change: transform, opacity;
+    animation: ios-view-in 260ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+  @media (min-width: 768px) {
+    .ios-sheet {
+      animation: ios-modal-pop 240ms cubic-bezier(0.32, 0.72, 0, 1) both;
+    }
+  }
+  @keyframes ios-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes ios-sheet-up {
+    from {
+      opacity: 0.6;
+      transform: translate3d(0, 100%, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+  @keyframes ios-modal-pop {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 10px, 0) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+  @keyframes ios-view-in {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 10px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .fx-btn,
     .fx-btn--shine::after {
       transition: none;
     }
-    .fxc-ping::before {
+    .fxc-ping::before,
+    .ios-backdrop,
+    .ios-sheet,
+    .ios-view {
       animation: none;
     }
     .fx-btn:hover:not(:disabled),
