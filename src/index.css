@@ -173,6 +173,20 @@
     }
   }
 
+  /* Parpadeo suave para avisos y modelos con 0 coincidencias. */
+  .parpadeo-cero {
+    animation: parpadeo-cero 1.6s ease-in-out infinite;
+  }
+  @keyframes parpadeo-cero {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .fx-btn,
     .fx-btn--shine::after {
@@ -181,7 +195,8 @@
     .fxc-ping::before,
     .ios-backdrop,
     .ios-sheet,
-    .ios-view {
+    .ios-view,
+    .parpadeo-cero {
       animation: none;
     }
     .fx-btn:hover:not(:disabled),

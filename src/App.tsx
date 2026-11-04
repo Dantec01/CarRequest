@@ -212,8 +212,12 @@ function Aplicacion({ token, onSinAcceso }: { token: string; onSinAcceso: () => 
                 }`}
               >
                 Resultados
-                {totalResultados > 0 && (
-                  <span className="rounded-full bg-[#1E7A3C] px-2 py-0.5 text-xs font-bold leading-none text-white">
+                {resultados.length > 0 && (
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-bold leading-none text-white ${
+                      totalResultados > 0 ? 'bg-[#1E7A3C]' : 'bg-suave'
+                    }`}
+                  >
                     {totalResultados}
                   </span>
                 )}

@@ -63,7 +63,12 @@ export default function VistaResultados({
           <span>{total}</span>
         </div>
         {porModelo.map((m) => (
-          <div key={m.modelo} className="mt-1 flex justify-between text-suave">
+          <div
+            key={m.modelo}
+            className={`mt-1 flex justify-between ${
+              m.cantidad === 0 ? 'text-peligro' : 'text-suave'
+            }`}
+          >
             <span>{m.modelo}</span>
             <span>{m.cantidad}</span>
           </div>
@@ -71,7 +76,13 @@ export default function VistaResultados({
       </div>
 
       {validos.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[#8A96A3] p-4 text-sm text-suave">
+        <div
+          className={`rounded-xl border border-dashed p-4 text-sm ${
+            resultados.length > 0
+              ? 'parpadeo-cero border-peligro/50 bg-[#FBE3E0]/40 text-peligro'
+              : 'border-[#8A96A3] text-suave'
+          }`}
+        >
           {resultados.length === 0
             ? 'Aún no hay resultados recibidos.'
             : 'No se encontraron coincidencias que pasaran los filtros.'}

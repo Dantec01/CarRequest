@@ -64,8 +64,12 @@ export default function VistaDia({
           className="fx-btn fx-btn--secondary fx-btn--shine flex min-h-11 items-center gap-1.5 rounded-[10px] border border-borde2 bg-white px-3 text-sm font-bold text-acento"
         >
           Resultados
-          {totalCoincidencias > 0 && (
-            <span className="rounded-full bg-[#1E7A3C] px-2 py-0.5 text-xs font-bold leading-none text-white">
+          {resultados.length > 0 && (
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs font-bold leading-none text-white ${
+                totalCoincidencias > 0 ? 'bg-[#1E7A3C]' : 'bg-suave'
+              }`}
+            >
               {totalCoincidencias}
             </span>
           )}

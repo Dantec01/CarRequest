@@ -138,7 +138,11 @@ function PanelResultadosPC({
           {porModelo.map((m) => (
             <div
               key={m.modelo}
-              className="flex items-center gap-2 rounded-lg border border-borde bg-fondo px-3 py-1.5 text-suave"
+              className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 ${
+                m.cantidad === 0
+                  ? 'border-peligro/40 bg-[#FBE3E0]/50 text-peligro'
+                  : 'border-borde bg-fondo text-suave'
+              }`}
             >
               <span>{m.modelo}</span>
               <span>{m.cantidad}</span>
@@ -150,7 +154,13 @@ function PanelResultadosPC({
       {/* Tabla de resultados debajo */}
       <section aria-label="Tabla de resultados" className="rounded-xl border border-borde bg-white p-3">
         {validos.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-[#8A96A3] p-4 text-sm text-suave">
+          <div
+            className={`rounded-lg border border-dashed p-4 text-sm ${
+              resultados.length > 0
+                ? 'parpadeo-cero border-peligro/50 bg-[#FBE3E0]/40 text-peligro'
+                : 'border-[#8A96A3] text-suave'
+            }`}
+          >
             {resultados.length === 0
               ? 'Aún no hay resultados recibidos.'
               : 'No se encontraron coincidencias que pasaran los filtros.'}
