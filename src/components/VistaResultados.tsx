@@ -66,7 +66,7 @@ export default function VistaResultados({
           <div
             key={m.modelo}
             className={`mt-1 flex justify-between ${
-              m.cantidad === 0 ? 'text-peligro' : 'text-suave'
+              m.cantidad === 0 ? 'text-peligro' : 'text-[#1E7A3C]'
             }`}
           >
             <span>{m.modelo}</span>

@@ -30,10 +30,9 @@
  *     guardarResultados { accion:"guardarResultados", token, dia:"martes",
  *                   resultados:[{ modelo, lote, subasta, chasis, anio, grado, km, color, puntaje, precio }] }
  *                   // agrega debajo de lo existente; ignora dia+modelo+lote+subasta repetidos (max. 500).
- *                   // cada envio o lectura limpia automaticamente los resultados vencidos (a las 23:59 JST del mismo dia).
  *                   // token: TOKEN o TOKEN_RESULTADOS (ver crearTokenResultados). Responde { ok, resultado:{ agregados, omitidos } }
- * - Leer resultados: GET <URL>?token=TOKEN&recurso=resultados -> { ok, resultados }
- *   Limpieza: automatica al vencer las 23:59 JST del mismo dia; tambien crearDisparadorLimpieza() (diario) o limpiarResultados() (vacia todo).
+ * - Leer resultados: GET <URL>?token=TOKEN&recurso=resultados -> { ok, resultados } (solo lee, nunca borra)
+ *   Limpieza: UNICAMENTE cuando el Activador del reloj ejecuta limpiarResultados().
  *   Toda escritura (salvo guardarResultados) responde { ok, version, resultado, items } con el tablero ya
  *   actualizado, para refrescar la pantalla sin otra peticion.
  */
@@ -233,9 +232,10 @@ function agregarFilas_(items, dias) {
 // ---------- Resultados (los envia la automatizacion) ----------
 
 /**
- * Los resultados se agregan debajo de los anteriores. Un resultado repetido
- * (mismo dia + modelo + lote + subasta) se ignora.
- * Los resultados se eliminan a las 23:59 (hora Japon) del mismo dia de la subasta.
+ * Los resultados se agregan debajo de los anteriores, sin borrar nada (solo ignora
+ * dia + modelo + lote + subasta repetidos).
+ * NADA en las peticiones GET o POST borra resultados: solo se borran si el
+ * Activador del reloj ejecuta limpiarResultados().
  */
 function guardarResultados_(body) {
   const dia = validarDia_(body.dia);
@@ -243,7 +243,6 @@ function guardarResultados_(body) {
   if (!Array.isArray(lista) || lista.length === 0) throw new Error('Indica al menos un resultado');
   if (lista.length > MAX_RESULTADOS) throw new Error('Maximo ' + MAX_RESULTADOS + ' resultados por envio');
 
-  limpiarResultadosVencidos_();
   const hoja = hojaAuxiliar_(HOJA_RES, COL_RES);
   const ultima = hoja.getLastRow();
   const claves = {};
@@ -270,9 +269,10 @@ function guardarResultados_(body) {
   return { agregados: filas.length, omitidos: omitidos };
 }
 
+/** Solo lee la hoja Resultados; nunca borra ni modifica filas. */
 function leerResultados_() {
-  limpiarResultadosVencidos_();
-  const hoja = hojaAuxiliar_(HOJA_RES, COL_RES);
+  const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_RES);
+  if (!hoja) return [];
   const ultima = hoja.getLastRow();
   if (ultima < 2) return [];
   return hoja.getRange(2, 1, ultima - 1, COL_RES.length).getValues()
@@ -284,42 +284,17 @@ function leerResultados_() {
     });
 }
 
-/** True si ya pasaron las 23:59:59 (hora Japon, UTC+9) del mismo dia en que se recibio. */
-function estaVencidoJST_(isoRecibido) {
-  const t = Date.parse(isoRecibido);
-  if (isNaN(t)) return false;
-  const OFFSET_JST = 9 * 3600 * 1000;
-  const MS_DIA = 86400 * 1000;
-  const diaRecibidoJST = Math.floor((t + OFFSET_JST) / MS_DIA);
-  const finMismoDiaUTC = (diaRecibidoJST + 1) * MS_DIA - OFFSET_JST - 1;
-  return Date.now() > finMismoDiaUTC;
-}
-
-/** Elimina de la hoja las filas cuyo dia (en hora Japon) ya termino (23:59 JST). */
-function limpiarResultadosVencidos_() {
-  const hoja = hojaAuxiliar_(HOJA_RES, COL_RES);
-  const ultima = hoja.getLastRow();
-  if (ultima < 2) return;
-  const iRecibido = COL_RES.indexOf('recibido');
-  const todas = hoja.getRange(2, 1, ultima - 1, COL_RES.length).getValues();
-  const vigentes = todas.filter(function (f) {
-    return f[0] !== '' && !estaVencidoJST_(String(f[iRecibido] || ''));
-  });
-  if (vigentes.length === todas.length) return;
-  hoja.deleteRows(2, ultima - 1);
-  agregarEnHoja_(hoja, vigentes, COL_RES.length);
-}
-
-/** Borra todos los resultados inmediatamente (ejecucion manual). */
+/** Borra todos los resultados (lo ejecuta el Activador diario a las 23:59 hora Japon). */
 function limpiarResultados() {
-  const hoja = hojaAuxiliar_(HOJA_RES, COL_RES);
+  const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_RES);
+  if (!hoja) return;
   const ultima = hoja.getLastRow();
   if (ultima >= 2) hoja.deleteRows(2, ultima - 1);
 }
 
 /**
- * Ejecutala una vez: pone la zona horaria del script en Asia/Tokyo y programa
- * limpiarResultados() todos los dias entre las 23:00 y 23:59 (hora Japon).
+ * Ejecutala una vez (si no creaste el activador a mano): programa limpiarResultados()
+ * todos los dias entre las 23:00 y 23:59 (hora Japon).
  */
 function crearDisparadorLimpieza() {
   ScriptApp.getProjectTriggers().forEach(function (t) {

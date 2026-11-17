@@ -137,18 +137,24 @@ export default function Formulario({
 
   const cambiar = (campo: Campo, valor: string) => setDatos((d) => ({ ...d, [campo]: valor }));
 
+  // Con 2 o más modelos (al crear o editar), chasis y grado se bloquean y no se guardan.
+  // Lo escrito se conserva en `datos`: si se vuelve a un solo modelo, reaparece.
+  const variosModelos = modelos.length > 1;
+  const bloqueado = (c: Campo) => variosModelos && (c === 'chasis' || c === 'grado');
+  const valorDe = (c: Campo) => (bloqueado(c) ? '' : datos[c]);
+
   const lista = modelos.map(limpiar).filter(Boolean);
   const subasta = subastas.map(limpiar).filter(Boolean).join(', ');
   const vacio =
     lista.length === 0 &&
     subasta === '' &&
-    CAMPOS.every((c) => c === 'modelo' || c === 'subasta' || datos[c].trim() === '');
+    CAMPOS.every((c) => c === 'modelo' || c === 'subasta' || valorDe(c).trim() === '');
 
   const enviar = (e: FormEvent) => {
     e.preventDefault();
     if (vacio) return;
     const base = Object.fromEntries(
-      CAMPOS.map((c) => [c, c === 'nota' ? datos[c].trim() : limpiar(datos[c])]),
+      CAMPOS.map((c) => [c, c === 'nota' ? valorDe(c).trim() : limpiar(valorDe(c))]),
     ) as DatosPedido;
     // Varios modelos van en una sola tarjeta, uno por línea.
     onGuardar(dia, [{ ...base, modelo: lista.join('\n'), subasta }]);
@@ -164,10 +170,11 @@ export default function Formulario({
     <label key={c} className="flex flex-col gap-1 text-xs text-suave">
       {ETIQUETAS[c]}
       <input
-        value={datos[c]}
+        value={valorDe(c)}
         onChange={(e) => cambiar(c, e.target.value)}
-        placeholder={AYUDA[c]}
-        className={entrada}
+        placeholder={bloqueado(c) ? 'Bloqueado con varios modelos' : AYUDA[c]}
+        disabled={bloqueado(c)}
+        className={`${entrada} disabled:cursor-not-allowed disabled:bg-borde/60 disabled:text-suave`}
       />
     </label>
   );

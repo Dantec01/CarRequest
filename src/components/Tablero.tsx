@@ -141,7 +141,7 @@ function PanelResultadosPC({
               className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 ${
                 m.cantidad === 0
                   ? 'border-peligro/40 bg-[#FBE3E0]/50 text-peligro'
-                  : 'border-borde bg-fondo text-suave'
+                  : 'border-[#1E7A3C]/30 bg-[#DDF3E4] text-[#1E7A3C]'
               }`}
             >
               <span>{m.modelo}</span>
